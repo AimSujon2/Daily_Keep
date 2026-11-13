@@ -1,0 +1,52 @@
+name: Build Android APK Automatically
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java JDK 17 for Android Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor & Generate Android Platform
+        run: |
+          npm install
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Inject Lock-Screen Exact Alarm & WakeLock Permissions
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            sed -i 's/<\/manifest>/<uses-permission android:name="android.permission.WAKE_LOCK" \/>\n<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" \/>\n<uses-permission android:name="android.permission.USE_EXACT_ALARM" \/>\n<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" \/>\n<uses-permission android:name="android.permission.POST_NOTIFICATIONS" \/>\n<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" \/>\n<\/manifest>/' "$MANIFEST"
+          fi
+
+      - name: Build Debug APK with Gradle
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Ready-to-Install APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Smart-Daily-Keep-Pro-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
