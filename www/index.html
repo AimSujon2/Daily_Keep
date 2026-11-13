@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="bn" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Daily Keep — Notes, Planner & Expense</title>
+  <script src="tailwind.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Tiro Bangla"', 'Inter', 'serif'],
+            mono: ['Inter', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @font-face {
+      font-family: 'Tiro Bangla';
+      font-style: normal;
+      font-weight: 400;
+      src: url('fonts/TiroBangla-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Tiro Bangla';
+      font-style: italic;
+      font-weight: 400;
+      src: url('fonts/TiroBangla-Italic.ttf') format('truetype');
+      font-display: swap;
+    }
+    body {
+      font-family: 'Tiro Bangla', 'Inter', serif;
+      -webkit-tap-highlight-color: transparent;
+      letter-spacing: 0.01em;
+    }
+    .font-ui-en {
+      font-family: 'Inter', 'Tiro Bangla', sans-serif;
+    }
+    .canvas-grid-dots {
+      background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+      background-size: 18px 18px;
+    }
+    .canvas-grid-squares {
+      background-size: 20px 20px;
+      background-image:
+        linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+        linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+    }
+    .canvas-grid-ruled {
+      background-size: 100% 26px;
+      background-image: linear-gradient(to bottom, transparent 25px, #cbd5e1 26px);
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.65); }
+      70% { transform: scale(1); box-shadow: 0 0 0 16px rgba(220, 38, 38, 0); }
+      100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    .alarm-pulse {
+      animation: pulseRing 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#f8f9fa] dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 min-h-screen pb-24 transition-colors duration-200">
+
+  <!-- Top Header Bar -->
+  <header class="sticky top-0 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur border-b border-zinc-200/90 dark:border-zinc-800 px-4 py-2.5">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg tracking-tight text-zinc-900 dark:text-white">Daily Keep</h1>
+            <span id="wake-lock-badge" class="text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800">Alarm Ready</span>
+          </div>
+          <p id="header-date-display" class="text-xs text-zinc-500 dark:text-zinc-400">Notes, Routine & Cashbook</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Cloud Sync Button -->
+        <button id="btn-open-cloud-modal" type="button" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200/70 transition">
+          <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="cloud-status-label">Cloud Sync</span>
+        </button>
+
+        <!-- Test Lock Screen Alarm Button -->
+        <button id="btn-trigger-demo-alarm" type="button" class="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200/70 transition" title="Test Lock Screen Alarm">
+          Test Alarm
+        </button>
+
+        <!-- Dark Mode Toggle -->
+        <button id="btn-toggle-theme" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200/70 text-xs transition" title="Theme পরিবর্তন করুন">
+          <span id="theme-icon">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Banner -->
+  <div id="toast-container" class="fixed top-16 right-4 z-50 hidden max-w-xs bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium px-4 py-2.5 rounded-lg shadow-lg border border-zinc-700">
+    <span id="toast-message">Saved</span>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl mx-auto px-4 pt-4">
+
+    <!-- TAB 1: HOME DASHBOARD -->
+    <section id="view-home" class="space-y-4">
+      <!-- Quick Overview Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white dark:bg-zinc-900 p-3.5 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <div class="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <span>Keep Notes</span>
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          </div>
+          <p id="stat-notes-count" class="text-2xl font-bold mt-1 text-zinc-900 dark:text-white">0</p>
+          <p id="stat-pinned-count" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">0টি Pinned</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-900 p-3.5 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <div class="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <span>আজকের Tasks</span>
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          </div>
+          <p id="stat-tasks-Summary" class="text-2xl font-bold mt-1 text-zinc-900 dark:text-white">0/0</p>
+          <p id="stat-alarm-count" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">0টি Active Alarm</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-900 p-3.5 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <div class="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <span>মোট Expense</span>
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          </div>
+          <p id="stat-today-expense" class="text-2xl font-bold mt-1 text-zinc-900 dark:text-white">৳ ০</p>
+          <p id="stat-month-balance" class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">Balance: ৳ ০</p>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-900 p-3.5 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <div class="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <span>Backup Status</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <p id="stat-sync-state" class="text-base font-bold mt-1.5 text-zinc-900 dark:text-white">Auto-Saved</p>
+          <p id="stat-last-synced" class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Local + Google Sync</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Bar (Google Keep Style) -->
+      <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200/90 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+        <button id="home-quick-note-btn" type="button" class="flex-1 min-w-[160px] text-left text-sm text-zinc-500 dark:text-zinc-400 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+          Take a note... নতুন নোট বা জরুরি লিস্ট লিখুন
+        </button>
+        <div class="flex items-center gap-1.5">
+          <button id="home-quick-draw-btn" type="button" class="px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-200/70 transition" title="Drawing & Shapes">
+            Sketch / Shape
+          </button>
+          <button id="home-quick-alarm-btn" type="button" class="px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-200/70 transition" title="Set Reminder">
+            + Reminder
+          </button>
+          <button id="home-quick-expense-btn" type="button" class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition" title="Add Expense">
+            + হিসাব
+          </button>
+        </div>
+      </div>
+
+      <!-- Pinned Keep Notes & Active Reminders on Home -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-bold text-sm text-zinc-800 dark:text-zinc-100">Pinned Notes (পিন করা নোট)</h2>
+            <button id="home-goto-keep" type="button" class="text-xs text-amber-600 dark:text-amber-400 font-medium hover:underline">সব নোট দেখুন</button>
+          </div>
+          <div id="home-pinned-notes-list" class="space-y-2.5"></div>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-bold text-sm text-zinc-800 dark:text-zinc-100">Upcoming Tasks & Alarms</h2>
+            <button id="home-goto-planner" type="button" class="text-xs text-amber-600 dark:text-amber-400 font-medium hover:underline">রুটিনে যান</button>
+          </div>
+          <div id="home-upcoming-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: GOOGLE KEEP NOTES + DRAWING + SHAPE BUILDER -->
+    <section id="view-keep" class="hidden space-y-4">
+      <!-- Keep Search & Toolbar -->
+      <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200/90 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex-1 min-w-[200px] relative">
+          <input id="keep-search-input" type="text" placeholder="Search notes, checklists বা ট্যাগ খুঁজুন..." class="w-full px-3.5 py-2 text-sm rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-transparent focus:border-amber-500 focus:outline-none" />
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="keep-filter-label" class="text-xs px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+            <option value="ALL">All Labels (সব)</option>
+            <option value="জরুরি">Urgent / জরুরি</option>
+            <option value="পড়াশোনা">Study / ক্লাস নোট</option>
+            <option value="হিসাব">Accounts / হিসাব</option>
+            <option value="ব্যক্তিগত">Personal / ব্যক্তিগত</option>
+          </select>
+          <button id="btn-open-drawing-studio" type="button" class="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition">
+            + Drawing & Shape Studio
+          </button>
+        </div>
+      </div>
+
+      <!-- Google Keep Note Creator Card -->
+      <div id="keep-creator-card" class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-300 dark:border-zinc-700 shadow-sm space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <input id="note-title-input" type="text" placeholder="Title (শিরোনাম)..." class="w-full font-bold text-base bg-transparent focus:outline-none placeholder:text-zinc-400" />
+          <button id="btn-toggle-note-pin" type="button" class="px-2.5 py-1 rounded-md text-xs border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300" title="Pin Note">Pin</button>
+        </div>
+
+        <!-- Text Mode vs Checklist Mode -->
+        <div id="note-text-container">
+          <textarea id="note-body-input" rows="3" placeholder="Take a note... (নিচের অপশন থেকে Checklist, Sketch অথবা Reminder যোগ করতে পারেন)" class="w-full text-sm bg-transparent focus:outline-none resize-none placeholder:text-zinc-400"></textarea>
+        </div>
+
+        <!-- Checklist Builder inside Note -->
+        <div id="note-checklist-container" class="hidden space-y-2">
+          <div id="note-checklist-items" class="space-y-1.5"></div>
+          <div class="flex items-center gap-2">
+            <input id="note-checklist-new-item" type="text" placeholder="+ নতুন লিস্ট আইটেম লিখুন..." class="flex-1 text-xs px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 focus:outline-none" />
+            <button id="btn-add-checklist-row" type="button" class="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 dark:bg-zinc-700 text-white font-medium">Add</button>
+          </div>
+        </div>
+
+        <!-- Attached Drawing Preview inside Creator -->
+        <div id="note-drawing-preview-wrap" class="hidden relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white p-2">
+          <img id="note-drawing-preview-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Attached Drawing" class="max-h-44 mx-auto object-contain max-w-full h-auto" />
+          <button id="btn-remove-attached-drawing" type="button" class="absolute top-2 right-2 bg-rose-600 text-white text-xs px-2 py-1 rounded">Remove</button>
+        </div>
+
+        <!-- Bottom Action Row inside Note Creator -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          <!-- Color Picker -->
+          <div class="flex items-center gap-1.5" id="keep-color-palette">
+            <button type="button" data-color="default" class="keep-color-btn w-5 h-5 rounded-full bg-white border border-zinc-300 ring-2 ring-amber-500" title="Default"></button>
+            <button type="button" data-color="amber" class="keep-color-btn w-5 h-5 rounded-full bg-amber-100 border border-amber-300" title="Warm Amber"></button>
+            <button type="button" data-color="emerald" class="keep-color-btn w-5 h-5 rounded-full bg-emerald-100 border border-emerald-300" title="Mint Green"></button>
+            <button type="button" data-color="sky" class="keep-color-btn w-5 h-5 rounded-full bg-sky-100 border border-sky-300" title="Soft Blue"></button>
+            <button type="button" data-color="rose" class="keep-color-btn w-5 h-5 rounded-full bg-rose-100 border border-rose-300" title="Soft Rose"></button>
+            <button type="button" data-color="violet" class="keep-color-btn w-5 h-5 rounded-full bg-violet-100 border border-violet-300" title="Lavender"></button>
+          </div>
+
+          <select id="note-label-input" class="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800">
+            <option value="জরুরি">Label: জরুরি</option>
+            <option value="পড়াশোনা">Label: পড়াশোনা</option>
+            <option value="হিসাব">Label: হিসাব</option>
+            <option value="ব্যক্তিগত">Label: ব্যক্তিগত</option>
+          </select>
+
+          <button id="btn-toggle-checklist-mode" type="button" class="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200/70">
+            Checklist
+          </button>
+
+          <button id="btn-attach-drawing-to-note" type="button" class="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200/70">
+            Draw / Shape
+          </button>
+
+          <div class="flex items-center gap-1 text-xs bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg">
+            <span class="text-zinc-500">Alarm:</span>
+            <input id="note-reminder-time" type="time" class="bg-transparent focus:outline-none text-xs" title="Reminder Time" />
+          </div>
+
+          <button id="btn-save-keep-note" type="button" class="ml-auto px-4 py-1.5 rounded-lg bg-zinc-900 dark:bg-amber-500 text-white dark:text-zinc-950 font-semibold text-xs hover:opacity-90 transition">
+            Save Note
+          </button>
+        </div>
+      </div>
+
+      <!-- DRAWING & SMART SHAPE BUILDER STUDIO -->
+      <div id="drawing-studio-panel" class="hidden bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-300 dark:border-zinc-700 shadow-md space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2.5">
+          <div>
+            <h3 class="font-bold text-sm">Drawing Canvas & Shape Builder</h3>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">হাত দিয়ে স্কেচ করুন অথবা ড্র্যাগ করে বৃত্ত, আয়তক্ষেত্র, ত্রিভুজ ও ডায়াগ্রাম আঁকুন</p>
+          </div>
+          <button id="btn-close-drawing-studio" type="button" class="text-xs px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200">Close</button>
+        </div>
+
+        <!-- Drawing Tools & Shape Builder Controls -->
+        <div class="flex flex-wrap items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 p-2 rounded-lg">
+          <button type="button" data-tool="pen" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-900 text-white">Pen</button>
+          <button type="button" data-tool="highlighter" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Highlighter</button>
+          <button type="button" data-tool="eraser" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Eraser</button>
+          <span class="text-zinc-300 dark:text-zinc-600 px-1">|</span>
+          <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Shapes:</span>
+          <button type="button" data-tool="rect" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Rectangle</button>
+          <button type="button" data-tool="circle" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Circle</button>
+          <button type="button" data-tool="triangle" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Triangle</button>
+          <button type="button" data-tool="diamond" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Diamond</button>
+          <button type="button" data-tool="line" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Line</button>
+          <button type="button" data-tool="arrow" class="draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700">Arrow</button>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center gap-1.5">
+              <span>Color:</span>
+              <input id="draw-color-picker" type="color" value="#18181b" class="w-6 h-6 rounded cursor-pointer border-0" />
+            </label>
+            <label class="flex items-center gap-1.5">
+              <span>Size:</span>
+              <input id="draw-size-slider" type="range" min="2" max="18" value="3" class="w-20 accent-zinc-900" />
+            </label>
+            <label class="flex items-center gap-1.5">
+              <input id="draw-fill-shape" type="checkbox" class="rounded accent-zinc-900" />
+              <span>Fill Shape</span>
+            </label>
+            <select id="draw-grid-style" class="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+              <option value="dots">Dot Grid</option>
+              <option value="squares">Square Grid</option>
+              <option value="ruled">Ruled Lines</option>
+              <option value="plain">Blank Canvas</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btn-draw-undo" type="button" class="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 font-medium">Undo</button>
+            <button id="btn-draw-clear" type="button" class="px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950 text-rose-600 font-medium">Clear</button>
+            <button id="btn-attach-canvas-to-note" type="button" class="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-600 text-white font-medium">Attach to Note</button>
+          </div>
+        </div>
+
+        <!-- HTML5 Canvas -->
+        <div id="canvas-wrapper" class="relative w-full h-72 sm:h-80 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white canvas-grid-dots overflow-hidden touch-none">
+          <canvas id="keep-drawing-canvas" class="w-full h-full cursor-crosshair block"></canvas>
+        </div>
+      </div>
+
+      <!-- Pinned Notes Grid -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Pinned</h3>
+        <div id="keep-pinned-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- Other Notes Grid -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Others</h3>
+        <div id="keep-others-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PLANNER, LOCK-SCREEN ALARM & POMODORO -->
+    <section id="view-planner" class="hidden space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Lock Screen Alarm & Reminder Setter -->
+        <div class="md:col-span-2 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-base">Daily Tasks & Lock-Screen Reminder</h2>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400">নির্ধারিত সময়ে স্ক্রিন লক থাকলেও বা অন্য কাজে থাকলেও অ্যালার্ম বাজবে</p>
+            </div>
+            <button id="btn-request-notif-perm" type="button" class="text-xs px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium border border-zinc-200 dark:border-zinc-700">
+              Enable Notification
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <input id="task-title-input" type="text" placeholder="আজকের কাজ বা রিমাইন্ডার লিখুন..." class="sm:col-span-2 px-3 py-2 text-sm rounded-lg bg-zinc-100 dark:bg-zinc-800 focus:outline-none" />
+            <select id="task-priority-input" class="px-3 py-2 text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800">
+              <option value="HIGH">Priority: High (জরুরি)</option>
+              <option value="MEDIUM">Priority: Normal (মাঝারি)</option>
+              <option value="LOW">Priority: Low (সাধারণ)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 rounded-lg text-xs">
+              <span>Time:</span>
+              <input id="task-alarm-time" type="time" class="bg-transparent focus:outline-none font-medium" />
+            </div>
+
+            <select id="task-alarm-tone" class="px-3 py-2 text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800">
+              <option value="classic">Tone: Classic Bell</option>
+              <option value="digital">Tone: Digital Beep</option>
+              <option value="melody">Tone: Soft Chime</option>
+            </select>
+
+            <button id="btn-add-task-alarm" type="button" class="ml-auto px-4 py-2 rounded-lg bg-zinc-900 dark:bg-amber-500 text-white dark:text-zinc-950 text-xs font-semibold transition">
+              + Save Task & Alarm
+            </button>
+          </div>
+
+          <!-- Tasks & Alarms List -->
+          <div id="planner-tasks-list" class="space-y-2 pt-3 border-t border-zinc-100 dark:border-zinc-800"></div>
+        </div>
+
+        <!-- Pomodoro Focus Timer Card -->
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 flex flex-col justify-between space-y-4">
+          <div>
+            <h3 class="font-bold text-sm">Focus Timer (Pomodoro)</h3>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">একটানা পড়াশোনা বা কাজের সেশন</p>
+          </div>
+
+          <div class="text-center py-4">
+            <div id="pomodoro-display" class="text-4xl font-bold tracking-wider text-zinc-900 dark:text-white font-ui-en">25:00</div>
+            <p id="pomodoro-mode-label" class="text-xs text-zinc-500 mt-1">25 min Focus Session</p>
+          </div>
+
+          <div class="flex items-center justify-center gap-2">
+            <button id="btn-pomo-start" type="button" class="px-4 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold">Start</button>
+            <button id="btn-pomo-pause" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-medium">Pause</button>
+            <button id="btn-pomo-reset" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-rose-600 text-xs font-medium">Reset</button>
+          </div>
+
+          <div class="flex items-center justify-center gap-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <button type="button" data-mins="25" class="pomo-preset-btn text-xs px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 font-medium">25m</button>
+            <button type="button" data-mins="15" class="pomo-preset-btn text-xs px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800">15m</button>
+            <button type="button" data-mins="5" class="pomo-preset-btn text-xs px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800">5m Break</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: EXPENSE & LEDGER TRACKER -->
+    <section id="view-expense" class="hidden space-y-4">
+      <!-- Summary Banner -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <span class="text-xs text-zinc-500">Total Income (মোট আয়)</span>
+          <p id="exp-total-income" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">৳ ০</p>
+        </div>
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <span class="text-xs text-zinc-500">Total Expense (মোট খরচ)</span>
+          <p id="exp-total-out" class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">৳ ০</p>
+        </div>
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800">
+          <span class="text-xs text-zinc-500">Due / বাকি ও পাওনা খাতা</span>
+          <p id="exp-total-due" class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">৳ ০</p>
+        </div>
+      </div>
+
+      <!-- Add Transaction Form -->
+      <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 space-y-3">
+        <h3 class="font-bold text-sm">নতুন হিসাব লিখুন (Add Entry)</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+          <input id="tx-title-input" type="text" placeholder="বিবরণ (যেমন: বাজার, বই, টিউশন ফি)..." class="sm:col-span-2 px-3 py-2 text-sm rounded-lg bg-zinc-100 dark:bg-zinc-800 focus:outline-none" />
+          <input id="tx-amount-input" type="number" placeholder="Amount (৳)" class="px-3 py-2 text-sm rounded-lg bg-zinc-100 dark:bg-zinc-800 focus:outline-none" />
+          <select id="tx-type-input" class="px-3 py-2 text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800 font-medium">
+            <option value="EXPENSE">Expense (খরচ)</option>
+            <option value="INCOME">Income (আয়)</option>
+            <option value="DUE">Due (বাকি/পাওনা)</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <select id="tx-category-input" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-100 dark:bg-zinc-800">
+            <option value="বাজার ও খাবার">Category: বাজার ও খাবার</option>
+            <option value="যাতায়াত">Category: যাতায়াত</option>
+            <option value="শিক্ষা ও উপকরণ">Category: শিক্ষা ও বই</option>
+            <option value="বিল ও রিচার্জ">Category: বিল ও রিচার্জ</option>
+            <option value="ব্যবসা / অনলাইন">Category: টিউশন / অনলাইন</option>
+          </select>
+          <button id="btn-save-transaction" type="button" class="px-5 py-2 rounded-lg bg-zinc-900 dark:bg-amber-500 text-white dark:text-zinc-950 text-xs font-semibold">
+            Save Entry
+          </button>
+        </div>
+      </div>
+
+      <!-- Transactions List -->
+      <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-sm">Recent Transactions (সাম্প্রতিক হিসাব)</h3>
+          <span class="text-xs text-zinc-400">Latest first</span>
+        </div>
+        <div id="expense-history-list" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SMART UTILITY TOOLKIT & FLASHCARDS -->
+    <section id="view-tools" class="hidden space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Age Calculator -->
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 space-y-3">
+          <h3 class="font-bold text-sm">Age Calculator (বয়স ক্যালকুলেটর)</h3>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="space-y-1">
+              <span class="text-zinc-500">Date of Birth:</span>
+              <input id="calc-dob-input" type="date" value="2000-01-02" class="w-full px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
+            </label>
+            <label class="space-y-1">
+              <span class="text-zinc-500">As of Date:</span>
+              <input id="calc-target-date" type="date" class="w-full px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
+            </label>
+          </div>
+          <button id="btn-calc-age" type="button" class="w-full py-2 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs font-semibold">Calculate Age</button>
+          <div id="age-calc-result" class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/80 text-xs font-medium text-zinc-800 dark:text-zinc-200 border border-zinc-200/70 dark:border-zinc-700"></div>
+        </div>
+
+        <!-- Discount Quick Calculator -->
+        <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 space-y-3">
+          <h3 class="font-bold text-sm">Discount & Percentage Calculator</h3>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="space-y-1">
+              <span class="text-zinc-500">মূল দাম (৳):</span>
+              <input id="disc-price-input" type="number" value="1200" class="w-full px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
+            </label>
+            <label class="space-y-1">
+              <span class="text-zinc-500">Discount (%):</span>
+              <input id="disc-percent-input" type="number" value="15" class="w-full px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
+            </label>
+          </div>
+          <button id="btn-calc-discount" type="button" class="w-full py-2 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs font-semibold">হিসাব দেখুন</button>
+          <div id="discount-calc-result" class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/80 text-xs font-medium text-zinc-800 dark:text-zinc-200 border border-zinc-200/70 dark:border-zinc-700"></div>
+        </div>
+      </div>
+
+      <!-- Quick Flashcard Revision Widget -->
+      <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-sm">Quick Revision Cards (ফ্ল্যাশকার্ড)</h3>
+          <span id="flashcard-counter" class="text-xs font-semibold text-zinc-500">1 / 3</span>
+        </div>
+        <div id="flashcard-box" class="p-6 rounded-xl bg-amber-50/60 dark:bg-zinc-800/70 border border-amber-200/80 dark:border-zinc-700 text-center cursor-pointer select-none space-y-2">
+          <p id="flashcard-question" class="font-bold text-base">কার্ডে ট্যাপ করে উত্তর দেখুন</p>
+          <p id="flashcard-answer" class="hidden text-sm text-emerald-700 dark:text-emerald-400 font-medium pt-2 border-t border-amber-200/60"></p>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <button id="btn-prev-card" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-medium">Previous</button>
+          <button id="btn-flip-card" type="button" class="px-4 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold">Flip Card / উত্তর</button>
+          <button id="btn-next-card" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-medium">Next</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LOCK-SCREEN FULLSCREEN ALARM OVERLAY MODAL -->
+  <div id="alarm-fullscreen-overlay" class="fixed inset-0 z-50 hidden bg-zinc-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center">
+    <div class="w-20 h-20 rounded-full bg-rose-600 flex items-center justify-center alarm-pulse mb-6">
+      <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <p class="text-xs uppercase tracking-widest text-rose-400 font-semibold">Daily Keep Reminder</p>
+    <h2 id="alarm-modal-title" class="text-2xl sm:text-3xl font-bold mt-2">কাজের সময় হয়েছে</h2>
+    <p id="alarm-modal-time" class="text-sm text-zinc-400 mt-1">Scheduled Now</p>
+
+    <div class="flex items-center gap-4 mt-8">
+      <button id="btn-alarm-snooze" type="button" class="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-medium border border-zinc-700">
+        Snooze (5 min)
+      </button>
+      <button id="btn-alarm-dismiss" type="button" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 text-sm font-bold shadow-lg">
+        Dismiss Alarm
+      </button>
+    </div>
+  </div>
+
+  <!-- GOOGLE CLOUD & DRIVE SYNC MODAL -->
+  <div id="cloud-sync-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+        <div>
+          <h3 class="font-bold text-base">Google Cloud Sync & Backup</h3>
+          <p class="text-xs text-zinc-500">আপনার সব নোট, ড্রয়িং ও হিসাব অনলাইনে নিজের গুগল অ্যাকাউন্টে সেভ রাখুন</p>
+        </div>
+        <button id="btn-close-cloud-modal" type="button" class="text-zinc-400 hover:text-zinc-600 text-sm font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200/70 dark:border-zinc-700 space-y-1">
+          <p class="font-bold">Google Drive / Apps Script Web App Sync:</p>
+          <p>আপনার Google Apps Script বা Firebase URL নিচে যুক্ত করলে প্রতিদিনের সব হিসাব ও নোট সরাসরি অনলাইনে ব্যাকআপ হবে।</p>
+        </div>
+
+        <label class="block space-y-1">
+          <span class="font-medium">Google Account Email:</span>
+          <input id="cloud-email-input" type="email" placeholder="yourname@gmail.com" class="w-full px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 focus:outline-none" />
+        </label>
+
+        <label class="block space-y-1">
+          <span class="font-medium">Cloud Sync Endpoint URL (Optional):</span>
+          <input id="cloud-endpoint-input" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 focus:outline-none" />
+        </label>
+
+        <div class="flex flex-wrap items-center gap-2 pt-2">
+          <button id="btn-sync-now" type="button" class="flex-1 py-2.5 rounded-lg bg-zinc-900 dark:bg-amber-500 text-white dark:text-zinc-950 font-semibold">
+            Sync Now
+          </button>
+          <button id="btn-export-backup" type="button" class="px-3.5 py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 font-medium">
+            Export JSON
+          </button>
+          <label class="px-3.5 py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 font-medium cursor-pointer">
+            Restore
+            <input id="cloud-import-file" type="file" accept=".json" class="hidden" />
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur border-t border-zinc-200 dark:border-zinc-800 px-2 py-1.5">
+    <div class="max-w-md mx-auto grid grid-cols-5 gap-1">
+      <button type="button" data-tab="home" class="nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-900 dark:text-amber-400 font-bold text-[11px] bg-zinc-100 dark:bg-zinc-800">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span>Home</span>
+      </button>
+      <button type="button" data-tab="keep" class="nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 font-medium text-[11px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span>Keep Notes</span>
+      </button>
+      <button type="button" data-tab="planner" class="nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 font-medium text-[11px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Reminders</span>
+      </button>
+      <button type="button" data-tab="expense" class="nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 font-medium text-[11px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Cashbook</span>
+      </button>
+      <button type="button" data-tab="tools" class="nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 font-medium text-[11px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        <span>Tools</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    (function() {
+      const STORAGE_KEY = 'smart_daily_keep_pro_v1';
+
+      const defaultState = {
+        darkMode: false,
+        activeTab: 'home',
+        cloudEmail: '',
+        cloudEndpoint: '',
+        lastSynced: 'Local Auto-Save',
+        notes: [
+          {
+            id: 'n1',
+            title: 'Weekly Tasks ও জরুরি বাজার লিস্ট',
+            body: '১. বাসার বাজার ও গ্রোসারি কেনা\n২. মাসের কারেন্ট ও ইন্টারনেট বিল পেমেন্ট\n৩. রাত ৯টায় ক্লাস নোট রিভিশন',
+            checklist: [
+              { text: 'মর্নিং রুটিন ও ওয়ার্কআউট', done: true },
+              { text: 'Google Drive-এ মাসের হিসাব ব্যাকআপ রাখা', done: false }
+            ],
+            color: 'amber',
+            label: 'জরুরি',
+            pinned: true,
+            reminder: '21:00',
+            drawingData: ''
+          },
+          {
+            id: 'n2',
+            title: 'Physics & Chemistry Quick Formulas',
+            body: 'PV = nRT (Ideal Gas Law)\nF = G(m₁m₂)/r² (মহাকর্ষ সূত্র)\nW = F·s cosθ',
+            checklist: [],
+            color: 'sky',
+            label: 'পড়াশোনা',
+            pinned: true,
+            reminder: '',
+            drawingData: ''
+          }
+        ],
+        tasks: [
+          {
+            id: 't1',
+            title: 'মাসের হিসাব চেক করা ও Cloud Sync আপডেট',
+            priority: 'HIGH',
+            alarmTime: '20:30',
+            tone: 'classic',
+            done: false,
+            firedToday: false
+          },
+          {
+            id: 't2',
+            title: 'আগামীকালের লেকচার শিট ও প্রশ্ন রেডি করা',
+            priority: 'MEDIUM',
+            alarmTime: '22:00',
+            tone: 'melody',
+            done: false,
+            firedToday: false
+          }
+        ],
+        transactions: [
+          { id: 'tx1', title: 'টিউশন ও কন্টেন্ট প্রজেক্ট আয়', amount: 18500, type: 'INCOME', category: 'ব্যবসা / অনলাইন', date: 'আজ' },
+          { id: 'tx2', title: 'সাপ্তাহিক কাঁচাবাজার ও গ্রোসারি', amount: 850, type: 'EXPENSE', category: 'বাজার ও খাবার', date: 'আজ' },
+          { id: 'tx3', title: 'ব্রডব্যান্ড ও কারেন্ট বিল', amount: 1200, type: 'EXPENSE', category: 'বিল ও রিচার্জ', date: 'আজ' },
+          { id: 'tx4', title: 'বই ও প্রিন্টিং বাবদ পাওনা', amount: 600, type: 'DUE', category: 'শিক্ষা ও উপকরণ', date: 'আজ' }
+        ],
+        flashcards: [
+          { q: '১ মোল গ্যাসের প্রমাণ অবস্থায় (STP) আয়তন কত?', a: '২২.৪ লিটার (22.4 L)' },
+          { q: 'পৃথিবীর মুক্তিবেগ (Escape Velocity) কত?', a: '১১.২ কিমি/সেকেন্ড (11.2 km/s)' },
+          { q: 'অ্যাভোগাড্রো সংখ্যার মান কত?', a: '6.022 × 10²³ টি অণু বা পরমাণু' }
+        ]
+      };
+
+      let state = loadState();
+      let currentNoteDraft = {
+        pinned: false,
+        color: 'default',
+        isChecklist: false,
+        checklist: [],
+        drawingData: ''
+      };
+
+      let audioCtx = null;
+      let alarmIntervalId = null;
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            return Object.assign({}, defaultState, JSON.parse(raw));
+          }
+        } catch (e) {}
+        return JSON.parse(JSON.stringify(defaultState));
+      }
+
+      // ---- Native (APK) alarm: ফোন লক/অ্যাপ বন্ধ থাকলেও বাজবে ----
+      function getNativeLN() {
+        try {
+          const C = window.Capacitor;
+          if (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.LocalNotifications) {
+            return C.Plugins.LocalNotifications;
+          }
+        } catch (e) {}
+        return null;
+      }
+
+      function hashId(str) {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) | 0; }
+        return Math.abs(h) % 2000000000 + 1;
+      }
+
+      async function syncNativeAlarms() {
+        const LN = getNativeLN();
+        if (!LN) return;
+        try {
+          try {
+            await LN.createChannel({ id: 'alarms', name: 'Alarms', description: 'Daily Keep reminders', importance: 5, visibility: 1, vibration: true });
+          } catch (e) {}
+          const pending = await LN.getPending();
+          if (pending && pending.notifications && pending.notifications.length) {
+            await LN.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+          }
+          const list = [];
+          state.tasks.forEach(t => {
+            if (t.done || !t.alarmTime || !/^\d{1,2}:\d{2}$/.test(t.alarmTime)) return;
+            const parts = t.alarmTime.split(':');
+            list.push({
+              id: hashId(String(t.id)),
+              title: 'Daily Keep Reminder',
+              body: t.title,
+              schedule: { on: { hour: parseInt(parts[0], 10), minute: parseInt(parts[1], 10) }, allowWhileIdle: true },
+              channelId: 'alarms'
+            });
+          });
+          if (list.length) await LN.schedule({ notifications: list });
+        } catch (e) {}
+      }
+
+      async function requestNativeNotifPermission() {
+        const LN = getNativeLN();
+        if (!LN) return false;
+        try {
+          const r = await LN.requestPermissions();
+          return r && r.display === 'granted';
+        } catch (e) { return false; }
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {}
+        renderAll();
+        syncNativeAlarms();
+      }
+
+      function showToast(msg) {
+        const box = document.getElementById('toast-container');
+        const txt = document.getElementById('toast-message');
+        if (!box || !txt) return;
+        txt.textContent = msg;
+        box.classList.remove('hidden');
+        setTimeout(() => {
+          box.classList.add('hidden');
+        }, 2600);
+      }
+
+      async function requestWakeLock() {
+        try {
+          if ('wakeLock' in navigator) {
+            await navigator.wakeLock.request('screen');
+          }
+        } catch (e) {}
+      }
+
+      function playAlarmTone(toneType) {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          if (!audioCtx) audioCtx = new AudioContextClass();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (toneType === 'digital') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(1174, now + 0.15);
+          } else if (toneType === 'melody') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.15);
+            osc.frequency.setValueAtTime(783.99, now + 0.3);
+          } else {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(740, now);
+            osc.frequency.setValueAtTime(880, now + 0.2);
+          }
+
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc.start(now);
+          osc.stop(now + 0.55);
+        } catch (e) {}
+      }
+
+      function triggerFullscreenAlarm(title, timeText, tone) {
+        const overlay = document.getElementById('alarm-fullscreen-overlay');
+        const titleEl = document.getElementById('alarm-modal-title');
+        const timeEl = document.getElementById('alarm-modal-time');
+        if (!overlay || !titleEl || !timeEl) return;
+
+        titleEl.textContent = title;
+        timeEl.textContent = 'Time: ' + timeText;
+        overlay.classList.remove('hidden');
+
+        playAlarmTone(tone || 'classic');
+        if (alarmIntervalId) clearInterval(alarmIntervalId);
+        alarmIntervalId = setInterval(() => {
+          playAlarmTone(tone || 'classic');
+        }, 1200);
+
+        try {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Daily Keep Reminder', { body: title });
+          }
+        } catch (e) {}
+      }
+
+      function stopFullscreenAlarm() {
+        const overlay = document.getElementById('alarm-fullscreen-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        if (alarmIntervalId) {
+          clearInterval(alarmIntervalId);
+          alarmIntervalId = null;
+        }
+      }
+
+      setInterval(() => {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const currentHM = hh + ':' + mm;
+
+        state.tasks.forEach(task => {
+          if (!task.done && task.alarmTime === currentHM && !task.firedToday) {
+            task.firedToday = true;
+            saveState();
+            triggerFullscreenAlarm(task.title, currentHM, task.tone);
+          }
+        });
+      }, 15000);
+
+      function switchTab(tabName) {
+        state.activeTab = tabName;
+        const tabs = ['home', 'keep', 'planner', 'expense', 'tools'];
+        tabs.forEach(t => {
+          const el = document.getElementById('view-' + t);
+          if (el) {
+            if (t === tabName) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+          }
+        });
+
+        document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+          const t = btn.getAttribute('data-tab');
+          if (t === tabName) {
+            btn.className = 'nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-900 dark:text-amber-400 font-bold text-[11px] bg-zinc-100 dark:bg-zinc-800';
+          } else {
+            btn.className = 'nav-tab-btn flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 font-medium text-[11px]';
+          }
+        });
+      }
+
+      function getKeepColorClasses(color) {
+        const map = {
+          default: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800',
+          amber: 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-200/90 dark:border-amber-800/60',
+          emerald: 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/90 dark:border-emerald-800/60',
+          sky: 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-200/90 dark:border-sky-800/60',
+          rose: 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200/90 dark:border-rose-800/60',
+          violet: 'bg-violet-50/80 dark:bg-violet-950/30 border-violet-200/90 dark:border-violet-800/60'
+        };
+        return map[color] || map.default;
+      }
+
+      function renderAll() {
+        const htmlEl = document.documentElement;
+        if (state.darkMode) {
+          htmlEl.classList.add('dark');
+          document.getElementById('theme-icon').textContent = 'Light';
+        } else {
+          htmlEl.classList.remove('dark');
+          document.getElementById('theme-icon').textContent = 'Dark';
+        }
+
+        const pinnedNotes = state.notes.filter(n => n.pinned);
+        document.getElementById('stat-notes-count').textContent = state.notes.length;
+        document.getElementById('stat-pinned-count').textContent = pinnedNotes.length + 'টি Pinned';
+
+        const doneTasks = state.tasks.filter(t => t.done).length;
+        const activeAlarms = state.tasks.filter(t => !t.done && t.alarmTime).length;
+        document.getElementById('stat-tasks-Summary').textContent = doneTasks + '/' + state.tasks.length;
+        document.getElementById('stat-alarm-count').textContent = activeAlarms + 'টি Active Alarm';
+
+        let totalIncome = 0, totalExpense = 0, totalDue = 0;
+        state.transactions.forEach(tx => {
+          const amt = Number(tx.amount) || 0;
+          if (tx.type === 'INCOME') totalIncome += amt;
+          else if (tx.type === 'EXPENSE') totalExpense += amt;
+          else if (tx.type === 'DUE') totalDue += amt;
+        });
+
+        document.getElementById('stat-today-expense').textContent = '৳ ' + totalExpense.toLocaleString('bn-BD');
+        document.getElementById('stat-month-balance').textContent = 'Balance: ৳ ' + (totalIncome - totalExpense).toLocaleString('bn-BD');
+        document.getElementById('stat-last-synced').textContent = state.lastSynced;
+
+        document.getElementById('exp-total-income').textContent = '৳ ' + totalIncome.toLocaleString('bn-BD');
+        document.getElementById('exp-total-out').textContent = '৳ ' + totalExpense.toLocaleString('bn-BD');
+        document.getElementById('exp-total-due').textContent = '৳ ' + totalDue.toLocaleString('bn-BD');
+
+        renderHomeLists();
+        renderKeepNotes();
+        renderPlannerTasks();
+        renderTransactions();
+      }
+
+      function renderHomeLists() {
+        const pinnedContainer = document.getElementById('home-pinned-notes-list');
+        const pinned = state.notes.filter(n => n.pinned).slice(0, 3);
+        if (pinned.length === 0) {
+          pinnedContainer.innerHTML = '<p class="text-xs text-zinc-400">কোনো Pinned Note নেই।</p>';
+        } else {
+          pinnedContainer.innerHTML = pinned.map(n => `
+            <div class="p-3 rounded-lg border ${getKeepColorClasses(n.color)} space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-xs">${escapeHtml(n.title || 'Untitled Note')}</h4>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-black/5 dark:bg-white/10">${escapeHtml(n.label)}</span>
+              </div>
+              <p class="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 whitespace-pre-line">${escapeHtml(n.body)}</p>
+              ${n.drawingData ? `<img src="${n.drawingData}" alt="Sketch" class="h-16 object-contain rounded border bg-white mt-1 max-w-full" />` : ''}
+            </div>
+          `).join('');
+        }
+
+        const upcomingContainer = document.getElementById('home-upcoming-list');
+        if (state.tasks.length === 0) {
+          upcomingContainer.innerHTML = '<p class="text-xs text-zinc-400">কোনো Task বা Reminder নেই।</p>';
+        } else {
+          upcomingContainer.innerHTML = state.tasks.slice(0, 4).map(t => `
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-800">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" data-task-toggle="${t.id}" ${t.done ? 'checked' : ''} class="rounded accent-zinc-900 cursor-pointer" />
+                <span class="text-xs font-medium ${t.done ? 'line-through text-zinc-400' : ''}">${escapeHtml(t.title)}</span>
+              </div>
+              ${t.alarmTime ? `<span class="text-[11px] px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-medium">${t.alarmTime}</span>` : ''}
+            </div>
+          `).join('');
+        }
+      }
+
+      function renderKeepNotes() {
+        const q = (document.getElementById('keep-search-input')?.value || '').trim().toLowerCase();
+        const labelFilter = document.getElementById('keep-filter-label')?.value || 'ALL';
+
+        const filtered = state.notes.filter(n => {
+          const matchText = !q || (n.title && n.title.toLowerCase().includes(q)) || (n.body && n.body.toLowerCase().includes(q));
+          const matchLabel = labelFilter === 'ALL' || n.label === labelFilter;
+          return matchText && matchLabel;
+        });
+
+        const pinned = filtered.filter(n => n.pinned);
+        const others = filtered.filter(n => !n.pinned);
+
+        document.getElementById('keep-pinned-grid').innerHTML = pinned.length
+          ? pinned.map(renderNoteCardHtml).join('')
+          : '<p class="text-xs text-zinc-400 col-span-full">কোনো Pinned Note নেই।</p>';
+
+        document.getElementById('keep-others-grid').innerHTML = others.length
+          ? others.map(renderNoteCardHtml).join('')
+          : '<p class="text-xs text-zinc-400 col-span-full">অন্য কোনো Note নেই।</p>';
+      }
+
+      function renderNoteCardHtml(n) {
+        const checklistHtml = (n.checklist && n.checklist.length)
+          ? `<div class="space-y-1 pt-1">${n.checklist.map((item, idx) => `
+              <label class="flex items-center gap-1.5 text-xs cursor-pointer">
+                <input type="checkbox" data-note-id="${n.id}" data-check-idx="${idx}" ${item.done ? 'checked' : ''} class="rounded accent-amber-600" />
+                <span class="${item.done ? 'line-through text-zinc-400' : ''}">${escapeHtml(item.text)}</span>
+              </label>
+            `).join('')}</div>`
+          : '';
+
+        return `
+          <div class="p-4 rounded-xl border shadow-sm flex flex-col justify-between space-y-3 ${getKeepColorClasses(n.color)}">
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="font-bold text-sm leading-snug">${escapeHtml(n.title || 'Untitled')}</h4>
+                <button type="button" data-pin-note="${n.id}" class="text-[11px] px-2 py-0.5 rounded border border-black/10 dark:border-white/10 ${n.pinned ? 'bg-amber-500 text-white border-amber-500' : 'text-zinc-500 hover:bg-black/5'}" title="Pin/Unpin">${n.pinned ? 'Pinned' : 'Pin'}</button>
+              </div>
+              ${n.body ? `<p class="text-xs text-zinc-700 dark:text-zinc-200 whitespace-pre-line leading-relaxed">${escapeHtml(n.body)}</p>` : ''}
+              ${checklistHtml}
+              ${n.drawingData ? `<div class="bg-white rounded-lg p-1.5 border border-zinc-200"><img src="${n.drawingData}" alt="Drawing" class="max-h-40 mx-auto object-contain max-w-full h-auto" /></div>` : ''}
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-black/5 dark:border-white/5 text-[11px]">
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded bg-black/5 dark:bg-white/10 font-medium">${escapeHtml(n.label)}</span>
+                ${n.reminder ? `<span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-medium">${n.reminder}</span>` : ''}
+              </div>
+              <button type="button" data-delete-note="${n.id}" class="text-zinc-400 hover:text-rose-600 font-medium">Delete</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderPlannerTasks() {
+        const container = document.getElementById('planner-tasks-list');
+        if (!container) return;
+        if (state.tasks.length === 0) {
+          container.innerHTML = '<p class="text-xs text-zinc-400">কোনো Task বা Reminder যোগ করা হয়নি।</p>';
+          return;
+        }
+        container.innerHTML = state.tasks.map(t => {
+          const badge = t.priority === 'HIGH'
+            ? '<span class="text-[10px] px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">High</span>'
+            : t.priority === 'MEDIUM'
+            ? '<span class="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Normal</span>'
+            : '<span class="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">Low</span>';
+
+          return `
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200/70 dark:border-zinc-800">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" data-task-toggle="${t.id}" ${t.done ? 'checked' : ''} class="w-4 h-4 rounded accent-zinc-900 cursor-pointer" />
+                <div>
+                  <p class="text-sm font-medium ${t.done ? 'line-through text-zinc-400' : ''}">${escapeHtml(t.title)}</p>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    ${badge}
+                    ${t.alarmTime ? `<span class="text-[11px] text-zinc-500 dark:text-zinc-400">Alarm: ${t.alarmTime}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" data-ring-task="${t.id}" class="text-xs px-2.5 py-1 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium">Test Ring</button>
+                <button type="button" data-delete-task="${t.id}" class="text-xs text-zinc-400 hover:text-rose-500 font-medium">Delete</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderTransactions() {
+        const listEl = document.getElementById('expense-history-list');
+        if (!listEl) return;
+        if (state.transactions.length === 0) {
+          listEl.innerHTML = '<p class="text-xs text-zinc-400">কোনো হিসাব এন্ট্রি নেই।</p>';
+          return;
+        }
+        listEl.innerHTML = state.transactions.map(tx => {
+          const colorCls = tx.type === 'INCOME'
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : tx.type === 'EXPENSE'
+            ? 'text-rose-600 dark:text-rose-400'
+            : 'text-amber-600 dark:text-amber-400';
+          const sign = tx.type === 'INCOME' ? '+' : '-';
+          return `
+            <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200/60 dark:border-zinc-800">
+              <div>
+                <p class="text-sm font-medium">${escapeHtml(tx.title)}</p>
+                <p class="text-[11px] text-zinc-500">${escapeHtml(tx.category)} • ${escapeHtml(tx.date || 'আজ')}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-sm ${colorCls}">${sign} ৳ ${Number(tx.amount).toLocaleString('bn-BD')}</span>
+                <button type="button" data-delete-tx="${tx.id}" class="text-xs text-zinc-400 hover:text-rose-500">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      // ==========================================
+      // GOOGLE KEEP DRAWING & SHAPE BUILDER ENGINE
+      // ==========================================
+      const canvas = document.getElementById('keep-drawing-canvas');
+      const ctx = canvas.getContext('2d');
+      let currentTool = 'pen';
+      let isDrawing = false;
+      let startX = 0, startY = 0;
+      let canvasSnapshots = [];
+      let activeSnapshot = null;
+
+      function resizeCanvas() {
+        const wrap = document.getElementById('canvas-wrapper');
+        if (!wrap || !canvas) return;
+        const rect = wrap.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const temp = canvas.toDataURL();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = temp;
+      }
+
+      function saveCanvasSnapshot() {
+        if (!canvas) return;
+        try {
+          canvasSnapshots.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+          if (canvasSnapshots.length > 20) canvasSnapshots.shift();
+        } catch (e) {}
+      }
+
+      function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      function startDraw(e) {
+        e.preventDefault();
+        if (canvas.width === 0) resizeCanvas();
+        saveCanvasSnapshot();
+        activeSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pos = getPointerPos(e);
+        startX = pos.x;
+        startY = pos.y;
+        isDrawing = true;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+      }
+
+      function moveDraw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPointerPos(e);
+        const color = document.getElementById('draw-color-picker').value;
+        const size = Number(document.getElementById('draw-size-slider').value) || 3;
+        const fillShape = document.getElementById('draw-fill-shape').checked;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (currentTool === 'pen' || currentTool === 'highlighter' || currentTool === 'eraser') {
+          ctx.globalAlpha = currentTool === 'highlighter' ? 0.35 : 1.0;
+          ctx.strokeStyle = currentTool === 'eraser' ? '#ffffff' : color;
+          ctx.lineWidth = currentTool === 'highlighter' ? size * 3 : currentTool === 'eraser' ? size * 4 : size;
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+          ctx.globalAlpha = 1.0;
+          return;
+        }
+
+        if (activeSnapshot) {
+          ctx.putImageData(activeSnapshot, 0, 0);
+        }
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = size;
+        ctx.beginPath();
+
+        const w = pos.x - startX;
+        const h = pos.y - startY;
+
+        if (currentTool === 'rect') {
+          if (fillShape) ctx.fillRect(startX, startY, w, h);
+          ctx.strokeRect(startX, startY, w, h);
+        } else if (currentTool === 'circle') {
+          const radius = Math.hypot(w, h);
+          ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+          if (fillShape) ctx.fill();
+          ctx.stroke();
+        } else if (currentTool === 'triangle') {
+          ctx.moveTo(startX + w / 2, startY);
+          ctx.lineTo(startX, startY + h);
+          ctx.lineTo(startX + w, startY + h);
+          ctx.closePath();
+          if (fillShape) ctx.fill();
+          ctx.stroke();
+        } else if (currentTool === 'diamond') {
+          ctx.moveTo(startX + w / 2, startY);
+          ctx.lineTo(startX + w, startY + h / 2);
+          ctx.lineTo(startX + w / 2, startY + h);
+          ctx.lineTo(startX, startY + h / 2);
+          ctx.closePath();
+          if (fillShape) ctx.fill();
+          ctx.stroke();
+        } else if (currentTool === 'line') {
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+        } else if (currentTool === 'arrow') {
+          const headLen = 14 + size;
+          const angle = Math.atan2(pos.y - startY, pos.x - startX);
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.lineTo(pos.x - headLen * Math.cos(angle - Math.PI / 6), pos.y - headLen * Math.sin(angle - Math.PI / 6));
+          ctx.moveTo(pos.x, pos.y);
+          ctx.lineTo(pos.x - headLen * Math.cos(angle + Math.PI / 6), pos.y - headLen * Math.sin(angle + Math.PI / 6));
+          ctx.stroke();
+        }
+      }
+
+      function endDraw() {
+        isDrawing = false;
+      }
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', moveDraw);
+      window.addEventListener('mouseup', endDraw);
+      canvas.addEventListener('touchstart', startDraw, { passive: false });
+      canvas.addEventListener('touchmove', moveDraw, { passive: false });
+      window.addEventListener('touchend', endDraw);
+
+      document.querySelectorAll('.draw-tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentTool = btn.getAttribute('data-tool');
+          document.querySelectorAll('.draw-tool-btn').forEach(b => {
+            b.className = 'draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-white dark:bg-zinc-700';
+          });
+          btn.className = 'draw-tool-btn px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-900 text-white';
+        });
+      });
+
+      document.getElementById('draw-grid-style').addEventListener('change', (e) => {
+        const wrap = document.getElementById('canvas-wrapper');
+        wrap.classList.remove('canvas-grid-dots', 'canvas-grid-squares', 'canvas-grid-ruled');
+        if (e.target.value === 'dots') wrap.classList.add('canvas-grid-dots');
+        else if (e.target.value === 'squares') wrap.classList.add('canvas-grid-squares');
+        else if (e.target.value === 'ruled') wrap.classList.add('canvas-grid-ruled');
+      });
+
+      document.getElementById('btn-draw-undo').addEventListener('click', () => {
+        if (canvasSnapshots.length > 0) {
+          const prev = canvasSnapshots.pop();
+          ctx.putImageData(prev, 0, 0);
+        }
+      });
+
+      document.getElementById('btn-draw-clear').addEventListener('click', () => {
+        saveCanvasSnapshot();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+
+      function openDrawingStudio() {
+        switchTab('keep');
+        const panel = document.getElementById('drawing-studio-panel');
+        panel.classList.remove('hidden');
+        setTimeout(() => resizeCanvas(), 60);
+      }
+
+      document.getElementById('btn-open-drawing-studio').addEventListener('click', openDrawingStudio);
+      document.getElementById('btn-attach-drawing-to-note').addEventListener('click', openDrawingStudio);
+      document.getElementById('home-quick-draw-btn').addEventListener('click', openDrawingStudio);
+
+      document.getElementById('btn-close-drawing-studio').addEventListener('click', () => {
+        document.getElementById('drawing-studio-panel').classList.add('hidden');
+      });
+
+      document.getElementById('btn-attach-canvas-to-note').addEventListener('click', () => {
+        const dataUrl = canvas.toDataURL('image/png');
+        currentNoteDraft.drawingData = dataUrl;
+        document.getElementById('note-drawing-preview-img').src = dataUrl;
+        document.getElementById('note-drawing-preview-wrap').classList.remove('hidden');
+        document.getElementById('drawing-studio-panel').classList.add('hidden');
+        showToast('Sketch নোটে যুক্ত হয়েছে');
+      });
+
+      document.getElementById('btn-remove-attached-drawing').addEventListener('click', () => {
+        currentNoteDraft.drawingData = '';
+        document.getElementById('note-drawing-preview-wrap').classList.add('hidden');
+      });
+
+      document.querySelectorAll('.keep-color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentNoteDraft.color = btn.getAttribute('data-color');
+          document.querySelectorAll('.keep-color-btn').forEach(b => b.classList.remove('ring-2', 'ring-amber-500'));
+          btn.classList.add('ring-2', 'ring-amber-500');
+        });
+      });
+
+      document.getElementById('btn-toggle-note-pin').addEventListener('click', () => {
+        currentNoteDraft.pinned = !currentNoteDraft.pinned;
+        showToast(currentNoteDraft.pinned ? 'Note Pinned' : 'Unpinned');
+      });
+
+      document.getElementById('btn-toggle-checklist-mode').addEventListener('click', () => {
+        currentNoteDraft.isChecklist = !currentNoteDraft.isChecklist;
+        document.getElementById('note-checklist-container').classList.toggle('hidden', !currentNoteDraft.isChecklist);
+      });
+
+      function renderDraftChecklist() {
+        const box = document.getElementById('note-checklist-items');
+        box.innerHTML = currentNoteDraft.checklist.map((item, i) => `
+          <div class="flex items-center justify-between text-xs bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded">
+            <span>☐ ${escapeHtml(item.text)}</span>
+            <button type="button" data-rem-draft-chk="${i}" class="text-rose-500 font-bold">✕</button>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('btn-add-checklist-row').addEventListener('click', () => {
+        const inp = document.getElementById('note-checklist-new-item');
+        const val = inp.value.trim();
+        if (!val) return;
+        currentNoteDraft.checklist.push({ text: val, done: false });
+        inp.value = '';
+        renderDraftChecklist();
+      });
+
+      document.getElementById('note-checklist-items').addEventListener('click', (e) => {
+        const idx = e.target.getAttribute('data-rem-draft-chk');
+        if (idx !== null) {
+          currentNoteDraft.checklist.splice(Number(idx), 1);
+          renderDraftChecklist();
+        }
+      });
+
+      document.getElementById('btn-save-keep-note').addEventListener('click', () => {
+        const title = document.getElementById('note-title-input').value.trim();
+        const body = document.getElementById('note-body-input').value.trim();
+        const label = document.getElementById('note-label-input').value;
+        const reminder = document.getElementById('note-reminder-time').value;
+
+        if (!title && !body && currentNoteDraft.checklist.length === 0 && !currentNoteDraft.drawingData) {
+          showToast('নোটের Title বা কিছু লেখা যোগ করুন');
+          return;
+        }
+
+        const newNote = {
+          id: 'n_' + Date.now(),
+          title: title || 'Quick Note',
+          body,
+          checklist: currentNoteDraft.checklist.slice(),
+          color: currentNoteDraft.color,
+          label,
+          pinned: currentNoteDraft.pinned,
+          reminder,
+          drawingData: currentNoteDraft.drawingData
+        };
+
+        state.notes.unshift(newNote);
+
+        if (reminder) {
+          state.tasks.unshift({
+            id: 't_' + Date.now(),
+            title: 'Note Reminder: ' + newNote.title,
+            priority: 'HIGH',
+            alarmTime: reminder,
+            tone: 'classic',
+            done: false,
+            firedToday: false
+          });
+        }
+
+        document.getElementById('note-title-input').value = '';
+        document.getElementById('note-body-input').value = '';
+        document.getElementById('note-reminder-time').value = '';
+        currentNoteDraft = { pinned: false, color: 'default', isChecklist: false, checklist: [], drawingData: '' };
+        document.getElementById('note-drawing-preview-wrap').classList.add('hidden');
+        document.getElementById('note-checklist-container').classList.add('hidden');
+        renderDraftChecklist();
+
+        saveState();
+        showToast('Note Saved');
+      });
+
+      document.getElementById('keep-search-input').addEventListener('input', renderKeepNotes);
+      document.getElementById('keep-filter-label').addEventListener('change', renderKeepNotes);
+
+      document.body.addEventListener('click', (e) => {
+        const pinId = e.target.getAttribute('data-pin-note');
+        if (pinId) {
+          const note = state.notes.find(n => n.id === pinId);
+          if (note) {
+            note.pinned = !note.pinned;
+            saveState();
+          }
+        }
+
+        const delNoteId = e.target.getAttribute('data-delete-note');
+        if (delNoteId) {
+          state.notes = state.notes.filter(n => n.id !== delNoteId);
+          saveState();
+          showToast('Note deleted');
+        }
+
+        const noteChkId = e.target.getAttribute('data-note-id');
+        if (noteChkId) {
+          const idx = Number(e.target.getAttribute('data-check-idx'));
+          const note = state.notes.find(n => n.id === noteChkId);
+          if (note && note.checklist[idx]) {
+            note.checklist[idx].done = e.target.checked;
+            saveState();
+          }
+        }
+
+        const taskToggleId = e.target.getAttribute('data-task-toggle');
+        if (taskToggleId) {
+          const t = state.tasks.find(x => x.id === taskToggleId);
+          if (t) {
+            t.done = e.target.checked;
+            saveState();
+          }
+        }
+
+        const ringTaskId = e.target.getAttribute('data-ring-task');
+        if (ringTaskId) {
+          const t = state.tasks.find(x => x.id === ringTaskId);
+          if (t) {
+            triggerFullscreenAlarm(t.title, t.alarmTime || 'Now', t.tone);
+          }
+        }
+
+        const delTaskId = e.target.getAttribute('data-delete-task');
+        if (delTaskId) {
+          state.tasks = state.tasks.filter(x => x.id !== delTaskId);
+          saveState();
+        }
+
+        const delTxId = e.target.getAttribute('data-delete-tx');
+        if (delTxId) {
+          state.transactions = state.transactions.filter(x => x.id !== delTxId);
+          saveState();
+          showToast('Entry deleted');
+        }
+      });
+
+      document.getElementById('btn-add-task-alarm').addEventListener('click', () => {
+        const title = document.getElementById('task-title-input').value.trim();
+        const priority = document.getElementById('task-priority-input').value;
+        const alarmTime = document.getElementById('task-alarm-time').value;
+        const tone = document.getElementById('task-alarm-tone').value;
+
+        if (!title) {
+          showToast('কাজের নাম বা রিমাইন্ডার লিখুন');
+          return;
+        }
+
+        state.tasks.unshift({
+          id: 't_' + Date.now(),
+          title,
+          priority,
+          alarmTime,
+          tone,
+          done: false,
+          firedToday: false
+        });
+
+        document.getElementById('task-title-input').value = '';
+        saveState();
+        requestWakeLock();
+        showToast('Task ও Alarm সেভ হয়েছে');
+      });
+
+      document.getElementById('btn-request-notif-perm').addEventListener('click', async () => {
+        try {
+          if (getNativeLN()) {
+            const ok = await requestNativeNotifPermission();
+            showToast(ok ? 'Notification Enabled' : 'ফোনের Settings থেকে Notification পারমিশন দিন');
+            syncNativeAlarms();
+          } else if ('Notification' in window) {
+            const perm = await Notification.requestPermission();
+            showToast(perm === 'granted' ? 'Notification Enabled' : 'Browser settings থেকে পারমিশন দিন');
+          } else {
+            showToast('Alarm Audio সক্রিয় আছে');
+          }
+        } catch (e) {
+          showToast('Alarm সক্রিয় আছে');
+        }
+      });
+
+      let pomoRemaining = 25 * 60;
+      let pomoTimerId = null;
+
+      function updatePomoDisplay() {
+        const m = String(Math.floor(pomoRemaining / 60)).padStart(2, '0');
+        const s = String(pomoRemaining % 60).padStart(2, '0');
+        document.getElementById('pomodoro-display').textContent = m + ':' + s;
+      }
+
+      document.getElementById('btn-pomo-start').addEventListener('click', () => {
+        if (pomoTimerId) clearInterval(pomoTimerId);
+        pomoTimerId = setInterval(() => {
+          if (pomoRemaining > 0) {
+            pomoRemaining--;
+            updatePomoDisplay();
+          } else {
+            clearInterval(pomoTimerId);
+            pomoTimerId = null;
+            triggerFullscreenAlarm('Focus Session সম্পন্ন হয়েছে!', '25:00', 'melody');
+          }
+        }, 1000);
+      });
+
+      document.getElementById('btn-pomo-pause').addEventListener('click', () => {
+        if (pomoTimerId) {
+          clearInterval(pomoTimerId);
+          pomoTimerId = null;
+        }
+      });
+
+      document.getElementById('btn-pomo-reset').addEventListener('click', () => {
+        if (pomoTimerId) {
+          clearInterval(pomoTimerId);
+          pomoTimerId = null;
+        }
+        pomoRemaining = 25 * 60;
+        updatePomoDisplay();
+      });
+
+      document.querySelectorAll('.pomo-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (pomoTimerId) {
+            clearInterval(pomoTimerId);
+            pomoTimerId = null;
+          }
+          const mins = Number(btn.getAttribute('data-mins')) || 25;
+          pomoRemaining = mins * 60;
+          updatePomoDisplay();
+        });
+      });
+
+      document.getElementById('btn-save-transaction').addEventListener('click', () => {
+        const title = document.getElementById('tx-title-input').value.trim();
+        const amount = Number(document.getElementById('tx-amount-input').value);
+        const type = document.getElementById('tx-type-input').value;
+        const category = document.getElementById('tx-category-input').value;
+
+        if (!title || !amount || amount <= 0) {
+          showToast('বিবরণ এবং টাকার পরিমাণ লিখুন');
+          return;
+        }
+
+        state.transactions.unshift({
+          id: 'tx_' + Date.now(),
+          title,
+          amount,
+          type,
+          category,
+          date: new Date().toLocaleDateString('bn-BD')
+        });
+
+        document.getElementById('tx-title-input').value = '';
+        document.getElementById('tx-amount-input').value = '';
+        saveState();
+        showToast('Entry Saved');
+      });
+
+      function calculateAge() {
+        const dobStr = document.getElementById('calc-dob-input').value;
+        const targetStr = document.getElementById('calc-target-date').value;
+        const box = document.getElementById('age-calc-result');
+        if (!dobStr || !targetStr) return;
+
+        const dob = new Date(dobStr);
+        const target = new Date(targetStr);
+        if (target < dob) {
+          box.textContent = 'Target date জন্ম তারিখের পরে হতে হবে।';
+          return;
+        }
+
+        let years = target.getFullYear() - dob.getFullYear();
+        let months = target.getMonth() - dob.getMonth();
+        let days = target.getDate() - dob.getDate();
+
+        if (days < 0) {
+          months--;
+          const prevMonth = new Date(target.getFullYear(), target.getMonth(), 0);
+          days += prevMonth.getDate();
+        }
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+        box.textContent = `বয়স: ${years} বছর, ${months} মাস, ${days} দিন`;
+      }
+
+      function calculateDiscount() {
+        const price = Number(document.getElementById('disc-price-input').value) || 0;
+        const pct = Number(document.getElementById('disc-percent-input').value) || 0;
+        const saved = (price * pct) / 100;
+        const finalPrice = price - saved;
+        document.getElementById('discount-calc-result').textContent =
+          `Payable: ৳ ${finalPrice.toFixed(0)} (Saved: ৳ ${saved.toFixed(0)})`;
+      }
+
+      document.getElementById('btn-calc-age').addEventListener('click', calculateAge);
+      document.getElementById('btn-calc-discount').addEventListener('click', calculateDiscount);
+
+      let cardIdx = 0;
+      function renderFlashcard() {
+        const item = state.flashcards[cardIdx];
+        if (!item) return;
+        document.getElementById('flashcard-counter').textContent = (cardIdx + 1) + ' / ' + state.flashcards.length;
+        document.getElementById('flashcard-question').textContent = 'Q: ' + item.q;
+        const ansEl = document.getElementById('flashcard-answer');
+        ansEl.textContent = 'Ans: ' + item.a;
+        ansEl.classList.add('hidden');
+      }
+
+      function toggleFlashcardAnswer() {
+        document.getElementById('flashcard-answer').classList.toggle('hidden');
+      }
+
+      document.getElementById('flashcard-box').addEventListener('click', toggleFlashcardAnswer);
+      document.getElementById('btn-flip-card').addEventListener('click', toggleFlashcardAnswer);
+      document.getElementById('btn-prev-card').addEventListener('click', () => {
+        cardIdx = (cardIdx - 1 + state.flashcards.length) % state.flashcards.length;
+        renderFlashcard();
+      });
+      document.getElementById('btn-next-card').addEventListener('click', () => {
+        cardIdx = (cardIdx + 1) % state.flashcards.length;
+        renderFlashcard();
+      });
+
+      document.getElementById('btn-trigger-demo-alarm').addEventListener('click', () => {
+        triggerFullscreenAlarm('রাত ৯টায় রিভিশন ও নোট চেক করার সময় হয়েছে', 'Now', 'classic');
+      });
+
+      document.getElementById('btn-alarm-dismiss').addEventListener('click', () => {
+        stopFullscreenAlarm();
+        showToast('Alarm Dismissed');
+      });
+
+      document.getElementById('btn-alarm-snooze').addEventListener('click', () => {
+        stopFullscreenAlarm();
+        showToast('Snoozed for 5 minutes');
+      });
+
+      document.getElementById('btn-open-cloud-modal').addEventListener('click', () => {
+        document.getElementById('cloud-email-input').value = state.cloudEmail || '';
+        document.getElementById('cloud-endpoint-input').value = state.cloudEndpoint || '';
+        document.getElementById('cloud-sync-modal').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-cloud-modal').addEventListener('click', () => {
+        document.getElementById('cloud-sync-modal').classList.add('hidden');
+      });
+
+      document.getElementById('btn-sync-now').addEventListener('click', async () => {
+        state.cloudEmail = document.getElementById('cloud-email-input').value.trim();
+        state.cloudEndpoint = document.getElementById('cloud-endpoint-input').value.trim();
+        const timeStr = new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+
+        if (state.cloudEndpoint && state.cloudEndpoint.startsWith('https://')) {
+          try {
+            await fetch(state.cloudEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                email: state.cloudEmail,
+                timestamp: new Date().toISOString(),
+                notes: state.notes,
+                tasks: state.tasks,
+                transactions: state.transactions
+              })
+            });
+            state.lastSynced = 'Synced: ' + timeStr;
+            showToast('Google Cloud Sync সম্পন্ন হয়েছে');
+          } catch (err) {
+            state.lastSynced = 'Local Save: ' + timeStr;
+            showToast('Local Storage-এ সেভ হয়েছে');
+          }
+        } else {
+          state.lastSynced = 'Saved: ' + timeStr;
+          showToast('ডেটা লোকাল স্টোরেজে সেভ হয়েছে');
+        }
+        saveState();
+        document.getElementById('cloud-sync-modal').classList.add('hidden');
+      });
+
+      document.getElementById('btn-export-backup').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'daily-keep-backup.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Backup JSON ডাউনলোড হয়েছে');
+      });
+
+      document.getElementById('cloud-import-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const imported = JSON.parse(ev.target.result);
+            state = Object.assign({}, defaultState, imported);
+            saveState();
+            showToast('Backup রিস্টোর হয়েছে');
+            document.getElementById('cloud-sync-modal').classList.add('hidden');
+          } catch (err) {
+            showToast('Invalid JSON file');
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+
+      document.getElementById('home-quick-note-btn').addEventListener('click', () => {
+        switchTab('keep');
+        document.getElementById('note-title-input').focus();
+      });
+      document.getElementById('home-quick-alarm-btn').addEventListener('click', () => {
+        switchTab('planner');
+        document.getElementById('task-title-input').focus();
+      });
+      document.getElementById('home-quick-expense-btn').addEventListener('click', () => {
+        switchTab('expense');
+        document.getElementById('tx-title-input').focus();
+      });
+      document.getElementById('home-goto-keep').addEventListener('click', () => switchTab('keep'));
+      document.getElementById('home-goto-planner').addEventListener('click', () => switchTab('planner'));
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        state.darkMode = !state.darkMode;
+        saveState();
+      });
+
+      document.getElementById('calc-target-date').value = new Date().toISOString().split('T')[0];
+      calculateAge();
+      calculateDiscount();
+      renderFlashcard();
+      renderAll();
+      requestWakeLock();
+      requestNativeNotifPermission().then(syncNativeAlarms);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "appId": "com.studypulse.dailykeep",
+  "appName": "Daily Keep",
+  "webDir": "www",
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#F59E0B"
+    }
+  }
+}

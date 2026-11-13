@@ -1,0 +1,17 @@
+{
+  "name": "smart-daily-keep-pro",
+  "version": "1.0.0",
+  "description": "All-in-One Smart Daily Planner, Google Keep Notes & Drawing Shape Builder, Lock-Screen Alarm, Expense Tracker & Google Cloud Sync",
+  "main": "www/index.html",
+  "scripts": {
+    "build": "echo 'Static build ready in www/'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
